@@ -22,17 +22,49 @@ static bool TryCreateFunctionNode(
         return false;
     }
 
+    // Accept memberName/memberClass, falling back to the functionName/targetClass
+    // aliases (and className) callers reach for. Resolving these avoids the
+    // useless "Function '' not found" when only the alias was supplied.
+    // See session-notes issue #4.
     FString MemberName;
     FString MemberClass;
-    Context.Payload->TryGetStringField(TEXT("memberName"), MemberName);
-    Context.Payload->TryGetStringField(TEXT("memberClass"), MemberClass);
+    if (!Context.Payload->TryGetStringField(TEXT("memberName"), MemberName) || MemberName.IsEmpty())
+    {
+        Context.Payload->TryGetStringField(TEXT("functionName"), MemberName);
+    }
+    if (!Context.Payload->TryGetStringField(TEXT("memberClass"), MemberClass) || MemberClass.IsEmpty())
+    {
+        if (!Context.Payload->TryGetStringField(TEXT("targetClass"), MemberClass) || MemberClass.IsEmpty())
+        {
+            Context.Payload->TryGetStringField(TEXT("className"), MemberClass);
+        }
+    }
+
+    if (MemberName.IsEmpty())
+    {
+        Context.SendError(
+            TEXT("CallFunction node requires a function name. Provide 'memberName' "
+                 "(alias 'functionName'); optionally 'memberClass' (alias "
+                 "'targetClass') to resolve a function on another class."),
+            TEXT("INVALID_ARGUMENT"));
+        return true;
+    }
+
     UFunction* Function = nullptr;
     if (!MemberClass.IsEmpty())
     {
-        if (UClass* Class = ResolveUClass(MemberClass))
+        UClass* Class = ResolveUClass(MemberClass);
+        if (!Class)
         {
-            Function = Class->FindFunctionByName(*MemberName);
+            Context.SendError(
+                FString::Printf(
+                    TEXT("Class '%s' not found (memberClass/targetClass). Use a class "
+                         "name like 'PlayerController' or a full object path."),
+                    *MemberClass),
+                TEXT("CLASS_NOT_FOUND"));
+            return true;
         }
+        Function = Class->FindFunctionByName(*MemberName);
     }
     else
     {
@@ -57,10 +89,15 @@ static bool TryCreateFunctionNode(
 
     if (!Function)
     {
+        const FString ClassContext = MemberClass.IsEmpty()
+            ? FString(TEXT(" in the Blueprint or the standard Kismet libraries "
+                           "(KismetSystemLibrary, GameplayStatics, KismetMathLibrary). "
+                           "Pass memberClass/targetClass to target another class."))
+            : FString::Printf(TEXT(" on class '%s'"), *MemberClass);
         Context.SendError(
             FString::Printf(
-                TEXT("Function '%s' not found"),
-                *MemberName),
+                TEXT("Function '%s' not found%s"),
+                *MemberName, *ClassContext),
             TEXT("FUNCTION_NOT_FOUND"));
         return true;
     }
