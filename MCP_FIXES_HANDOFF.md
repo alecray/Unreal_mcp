@@ -343,6 +343,15 @@ Base: `Z:\Epic Games\UE_5.8\Engine\Plugins\FX\Niagara\Source\NiagaraEditor\`
    `--base dev`, reviewer esker, follow the PR template).
 8. **Upstream PRs** for the generally-useful fixes (RenderConsole 5.8 now; validate once it actually
    detects dependency errors). Branch is already on `fork` (`alecray/Unreal_mcp`) ready to PR to ChiR24.
+9. **`.uplugin` — `GameplayAbilities` dep lost its `Optional` flag** (found 2026-06-16 while re-syncing
+   into whenpigsfly). In `plugins/McpAutomationBridge/McpAutomationBridge.uplugin` the `GameplayAbilities`
+   entry (~line 129) is `{"Name":"GameplayAbilities","Enabled":true}` — missing `"Optional": true` that
+   every sibling engine dep (RigVM, IKRig, GeometryProcessing, ChaosCloth, …) carries. A non-optional
+   `Enabled` dep **force-enables GAS project-wide** in any host project that vendors the plugin
+   (whenpigsfly's `.uproject` does NOT enable GAS, yet now gets it pulled in by an editor tool). Fix:
+   restore `"Optional": true` on that entry, and sweep the whole `Plugins` array to confirm no other
+   engine dep silently lost `Optional` in the same edit. Editor-target build is unaffected (still clean),
+   so low urgency — batch it into the next pass.
 
 ---
 
