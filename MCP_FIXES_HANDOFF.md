@@ -285,13 +285,25 @@ Base: `Z:\Epic Games\UE_5.8\Engine\Plugins\FX\Niagara\Source\NiagaraEditor\`
    `mcp-fixes` (local; not yet pushed). **Open question for a shipping build:** if the asset is already
    open in a Niagara editor, we now spin a *second* full VM for the same `UNiagaraSystem` — theoretical
    conflict (both register undo / reset). Not observed; revisit only if it bites. NEXT BACKLOG ITEM ↓.
-2. **#11 PCG Build.cs 5.8:** change the PCG `AddOptionalDynamicModule(...)` to
-   `AddOptionalConditionalModule(...)` in `McpAutomationBridge.Build.cs` (first verify that helper
-   exists in the dev Build.cs; Alec's WPF note used it). Prevents `LNK1194` when PCG is enabled.
-3. **#5 ListenPorts additive:** in `Private/Core/Settings/McpAutomationBridgeSettings.cpp` / the
-   connection manager, union user ports with the `8090,8091` defaults (or warn if 8091 missing).
-4. **#4 spawn rollback:** read `Private/Domains/ControlActor/McpAutomationBridge_ControlActorSpawn.cpp`;
-   destroy the just-spawned actor when the handler returns an engine error.
+2. ~~**#11 PCG Build.cs 5.8**~~ ⏭️ DROPPED (2026-06-16, Alec's call) — OUT OF SCOPE for whenpigsfly.
+   The fix (`AddOptionalDynamicModule(...,"PCG",..)` → `AddOptionalConditionalModule(EngineDir,"PCG","PCG")`
+   on `Build.cs:54`, dropping the delay-load DLL to avoid LNK1194) is real but only matters when the PCG
+   plugin is enabled. whenpigsfly does NOT enable PCG (its `.uproject` has no PCG; `bHasPCG`=false →
+   delay-load line never runs → `MCP_HAS_PCG=0` → no LNK1194). Niagara is independent of PCG (Niagara's
+   only plugin dep is PythonScriptPlugin), so WPF using Niagara does not transitively need it. Keep as a
+   possible **upstream-only** PR (helps anyone who enables PCG on 5.8); not implemented here.
+3. ~~**#5 ListenPorts additive**~~ ✅ DONE & VERIFIED (2026-06-16, commit `e02900f`, local). Decision
+   (Alec asked for a rec): chose **warn-only**, not force-additive — additive would re-bind the
+   defaults even when a user dropped them on purpose (a surprising, outward-facing network change),
+   whereas warn changes zero binding behavior. `FMcpConnectionManager::Initialize` now logs a Warning
+   when `bMultiListen` is on and the configured `ListenPorts` omits a default bridge port (8090/8091).
+   Verified in MCPBench: `ListenPorts=9000` → warning naming 8090,8091 fires AND the server still binds
+   only 9000 (no forced extra sockets).
+4. ~~**#4 spawn rollback**~~ ✅ DONE & VERIFIED (2026-06-16, commit `524d62a`, local). `HandleControlActorSpawn`
+   is now transactional: pre-spawn `MESH_NOT_FOUND` if an explicit `meshPath` can't load; post-spawn
+   `Destroy()` + `MESH_APPLY_FAILED` if a resolved mesh can't be applied (mirrors the spline handlers).
+   Verified in MCPBench over HTTP (happy/static-mesh, bad-mesh, PointLight+mesh rollback with PointLight
+   count returning to baseline, plain-PointLight regression).
 5. **#3 bEnableNativeMCP default** — propose-only (flipping a server-on default is a security/design call;
    raise upstream rather than just flipping).
 6. **Game-repo config items** (not in this plugin): #1 reconcile the MCP port across
