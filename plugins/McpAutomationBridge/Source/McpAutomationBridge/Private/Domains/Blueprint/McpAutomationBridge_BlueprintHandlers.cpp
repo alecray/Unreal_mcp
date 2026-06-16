@@ -26,6 +26,35 @@ bool UMcpAutomationBridgeSubsystem::HandleBlueprintAction(
     return false;
   }
 
+  // Guard the masked "args didn't arrive" case: when manage_blueprint is invoked
+  // but its nested `action` arg is absent/empty, the context falls back to the
+  // wrapper name ("manage_blueprint"). Reporting that as an unknown action sends
+  // callers hunting for a bad action name that was never the problem — surface
+  // the real cause (the action param never arrived) instead of echoing the
+  // method name. See session-notes issue #66.
+  {
+    FString WrapperNormalized = Context.Lower;
+    WrapperNormalized.ReplaceInline(TEXT("-"), TEXT("_"));
+    WrapperNormalized.ReplaceInline(TEXT(" "), TEXT("_"));
+    if (WrapperNormalized == TEXT("manage_blueprint") ||
+        WrapperNormalized == TEXT("manageblueprint")) {
+      UE_LOG(LogMcpAutomationBridgeSubsystem, Warning,
+             TEXT("HandleBlueprintAction: manage_blueprint invoked without a "
+                  "nested 'action' parameter (RequestId=%s). The action arg did "
+                  "not arrive in the payload."),
+             *RequestId);
+      SendAutomationError(
+          RequestingSocket, RequestId,
+          TEXT("Missing required parameter: action. manage_blueprint requires an "
+               "'action' field naming the operation (e.g. set_default, compile, "
+               "create_node, add_variable, add_event). The wrapper tool name is "
+               "not itself a valid action; if you passed one, the parameters did "
+               "not arrive — re-send the call with action + params set explicitly."),
+          TEXT("MISSING_PARAMETER"));
+      return true;
+    }
+  }
+
   McpBlueprintHandlers::DiagnosticPatternChecks(Context);
 
   using FBlueprintRoute = bool (*)(const McpBlueprintHandlers::FBlueprintActionContext &);
