@@ -23,6 +23,17 @@ Commits on `mcp-fixes`:
   `/Game/NS_Control` → `isValid:true` (no false alarm). See §5. **For a clean upstream PR, squash
   `940935f` + the finalizing commit.**
 
+All on `fork/mcp-fixes` (pushed). Shipped fixes (each built + HTTP-verified in MCPBench on 5.8):
+- `971f040` #7 validate_niagara_system (full VM) · `524d62a` #4 spawn rollback (transactional) ·
+  `e02900f` #5 ListenPorts drop warning · `8613c1e` **`MCP_NATIVE_PORT` env override** (pick the native
+  port per editor via env, no ini edit; mirrors existing `MCP_MAX_*` env pattern — upstream-PR-ready).
+- **#11 (PCG Build.cs delay-load) DROPPED** — out of scope for WPF (PCG not enabled there). #3
+  (`bEnableNativeMCP` default) parked (maintainer call). #2 (.uplugin) already on master+dev.
+- **WPF MCP port drift fixed & verified:** `.mcp.json` was 8000 vs server 3010. Per-game native ports
+  now: **WPF 3001, gearmaw 3002, lumespawn 3003** (client+server; lumespawn server still off). WPF
+  editor launched → MCP answered an initialize handshake on 3001. Open upstream issues are all UE 5.7.x
+  (low relevance to WPF/5.8).
+
 The improvement backlog (audit of Alec's notes across all his game repos) lives in
 `E:\Game Projects\gearmaw\Plugins\McpAutomationBridge\UNREAL_MCP_IMPROVEMENTS.md` (a different
 repo — gearmaw — chosen because the plugin is vendored there and gearmaw is a personal project).
