@@ -18,6 +18,44 @@ export function createWidgetAuthoringContext(args: HandlerArgs, tools: ITools): 
   };
 }
 
+// Common parameter aliases callers reach for from neighboring tools. A widget
+// action's canonical asset-path field is `widgetPath` (but set_default/compile/
+// get_graph_details use `blueprintPath`), and its slot target is `slotName` (but
+// child-creating actions use `name`). Resolving these avoids a spurious
+// "Missing required parameter" on the first call. Keyed by canonical field name.
+const WIDGET_PARAM_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  widgetPath: ['blueprintPath'],
+  slotName: ['name', 'widgetName', 'childName']
+};
+
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+// Fill any required canonical field that is still empty from a known alias.
+// Only touches required fields, so non-required uses of an alias (e.g.
+// add_text_block's child `name`) are left untouched.
+export function applyWidgetParamAliases(
+  argsRecord: Record<string, unknown>,
+  requiredFields: readonly string[]
+): void {
+  for (const canonical of requiredFields) {
+    if (isNonEmptyString(argsRecord[canonical])) {
+      continue;
+    }
+    const aliases = WIDGET_PARAM_ALIASES[canonical];
+    if (!aliases) {
+      continue;
+    }
+    for (const alias of aliases) {
+      if (isNonEmptyString(argsRecord[alias])) {
+        argsRecord[canonical] = argsRecord[alias];
+        break;
+      }
+    }
+  }
+}
+
 export function validateWidgetRequiredFields(
   argsRecord: Record<string, unknown>,
   fieldNames: readonly string[]

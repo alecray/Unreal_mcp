@@ -2,6 +2,7 @@ import type { HandlerArgs } from '../../../types/handlers/handler-types.js';
 import type { ITools } from '../../../types/tools/tool-interfaces.js';
 import { getWidgetActionRequiredFields } from './widget-authoring-action-requirements.js';
 import {
+  applyWidgetParamAliases,
   createWidgetAuthoringContext,
   sendWidgetAuthoringRequest,
   validateWidgetRequiredFields
@@ -22,6 +23,7 @@ export async function handleWidgetAuthoringTools(
   }
 
   const context = createWidgetAuthoringContext(args, tools);
+  applyWidgetParamAliases(context.argsRecord, requiredFields);
   validateWidgetRequiredFields(context.argsRecord, requiredFields);
   return await sendWidgetAuthoringRequest(context, action);
 }

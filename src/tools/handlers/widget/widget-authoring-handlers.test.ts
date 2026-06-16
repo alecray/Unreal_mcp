@@ -43,6 +43,51 @@ describe('handleWidgetAuthoringTools payload normalization', () => {
     }), expect.any(Object));
   });
 
+  it('accepts blueprintPath as an alias for widgetPath', async () => {
+    const { tools, sendAutomationRequest } = createConnectedTools();
+
+    await handleWidgetAuthoringTools('get_widget_info', {
+      action: 'get_widget_info',
+      blueprintPath: '/Game/UI/WBP_Menu.WBP_Menu'
+    }, tools);
+
+    expect(sendAutomationRequest).toHaveBeenCalledWith('manage_widget_authoring', expect.objectContaining({
+      subAction: 'get_widget_info',
+      widgetPath: '/Game/UI/WBP_Menu.WBP_Menu'
+    }), expect.any(Object));
+  });
+
+  it('accepts name as an alias for slotName on slot actions', async () => {
+    const { tools, sendAutomationRequest } = createConnectedTools();
+
+    await handleWidgetAuthoringTools('set_anchor', {
+      action: 'set_anchor',
+      widgetPath: '/Game/UI/WBP_Menu.WBP_Menu',
+      name: 'TitleText'
+    }, tools);
+
+    expect(sendAutomationRequest).toHaveBeenCalledWith('manage_widget_authoring', expect.objectContaining({
+      subAction: 'set_anchor',
+      slotName: 'TitleText'
+    }), expect.any(Object));
+  });
+
+  it('does not clobber an explicit canonical field with an alias', async () => {
+    const { tools, sendAutomationRequest } = createConnectedTools();
+
+    await handleWidgetAuthoringTools('set_anchor', {
+      action: 'set_anchor',
+      widgetPath: '/Game/UI/WBP_Menu.WBP_Menu',
+      slotName: 'RealSlot',
+      name: 'IgnoredName'
+    }, tools);
+
+    expect(sendAutomationRequest).toHaveBeenCalledWith('manage_widget_authoring', expect.objectContaining({
+      subAction: 'set_anchor',
+      slotName: 'RealSlot'
+    }), expect.any(Object));
+  });
+
   it('maps scalar layout aliases to native vector payloads', async () => {
     const { tools, sendAutomationRequest } = createConnectedTools();
 
