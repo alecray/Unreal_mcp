@@ -34,7 +34,7 @@ void UMcpAutomationBridgeSubsystem::ProcessAutomationRequest(
   // Guard against unsafe engine states (Saving, GC, Async Loading)
   // Calling StaticFindObject (via ResolveClassByName) during these states can
   // cause crashes.
-  if (GIsSavingPackage || IsGarbageCollecting() || IsAsyncLoading()) {
+  if (UE::IsSavingPackage() || IsGarbageCollecting() || IsAsyncLoading()) {
     UE_LOG(LogMcpAutomationBridgeSubsystem, Verbose,
            TEXT("Deferring ProcessAutomationRequest due to active "
                 "Serialization/GC/Loading: RequestId=%s Action=%s"),

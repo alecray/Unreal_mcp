@@ -136,7 +136,7 @@ bool UMcpAutomationBridgeSubsystem::SendRawMessage(const FString& Message)
 
 bool UMcpAutomationBridgeSubsystem::Tick(float DeltaTime)
 {
-    if (!GIsSavingPackage && !IsGarbageCollecting() && !IsAsyncLoading())
+    if (!UE::IsSavingPackage() && !IsGarbageCollecting() && !IsAsyncLoading())
     {
         ProcessPendingAutomationRequests();
     }

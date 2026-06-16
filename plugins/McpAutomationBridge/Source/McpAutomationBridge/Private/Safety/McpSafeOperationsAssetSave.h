@@ -40,7 +40,7 @@ inline bool McpSafeAssetSave(UObject* Asset)
                 return false;
             }
             return true;
-        }, false);
+        }, EGetObjectsFlags::None);
     }
     else
     {
