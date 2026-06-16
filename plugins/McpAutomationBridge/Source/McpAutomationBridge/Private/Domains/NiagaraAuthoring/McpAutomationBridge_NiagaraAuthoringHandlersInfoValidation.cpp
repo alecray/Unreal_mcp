@@ -1,6 +1,13 @@
 #include "Domains/NiagaraAuthoring/McpAutomationBridge_NiagaraAuthoringHandlersContext.h"
 
 #if WITH_EDITOR
+#include "ViewModels/NiagaraSystemViewModel.h"
+#include "ViewModels/NiagaraEmitterHandleViewModel.h"
+#include "ViewModels/Stack/NiagaraStackViewModel.h"
+#include "ViewModels/Stack/NiagaraStackEntry.h"
+#endif
+
+#if WITH_EDITOR
 namespace McpNiagaraAuthoringHandlers
 {
 static void AddSystemInfo(TSharedPtr<FJsonObject>& InfoObj, UNiagaraSystem* System)
@@ -83,6 +90,35 @@ static bool GetNiagaraInfo(FActionContext& Context)
     return true;
 }
 
+// Recursively collect Error/Warning issues from a Niagara stack-entry tree. These are the same
+// issues the Niagara editor surfaces in the stack panel (unmet module dependencies, deprecated
+// modules, compile failures), so harvesting them is the authoritative "is this system broken?".
+static void CollectStackIssues(UNiagaraStackEntry* Entry, TArray<TSharedPtr<FJsonValue>>& Errors, TArray<TSharedPtr<FJsonValue>>& Warnings)
+{
+    if (!Entry)
+    {
+        return;
+    }
+    for (const UNiagaraStackEntry::FStackIssue& Issue : Entry->GetIssues())
+    {
+        const FString Message = Issue.GetShortDescription().ToString();
+        if (Issue.GetSeverity() == EStackIssueSeverity::Error)
+        {
+            Errors.Add(MakeShared<FJsonValueString>(Message));
+        }
+        else if (Issue.GetSeverity() == EStackIssueSeverity::Warning)
+        {
+            Warnings.Add(MakeShared<FJsonValueString>(Message));
+        }
+    }
+    TArray<UNiagaraStackEntry*> Children;
+    Entry->GetUnfilteredChildren(Children);
+    for (UNiagaraStackEntry* Child : Children)
+    {
+        CollectStackIssues(Child, Errors, Warnings);
+    }
+}
+
 static bool ValidateNiagaraSystem(FActionContext& Context)
 {
     if (Context.SystemPath.IsEmpty())
@@ -100,9 +136,12 @@ static bool ValidateNiagaraSystem(FActionContext& Context)
     {
         return true;
     }
+
     TSharedPtr<FJsonObject> ValidationResult = McpHandlerUtils::CreateResultObject();
     TArray<TSharedPtr<FJsonValue>> ErrorsArray;
     TArray<TSharedPtr<FJsonValue>> WarningsArray;
+
+    // Cheap structural warnings, independent of the stack.
     if (System->GetEmitterHandles().Num() == 0)
     {
         WarningsArray.Add(MakeShared<FJsonValueString>(TEXT("System has no emitters.")));
@@ -113,21 +152,64 @@ static bool ValidateNiagaraSystem(FActionContext& Context)
         {
             WarningsArray.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("Emitter '%s' is disabled."), *Handle.GetName().ToString())));
         }
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-        MCP_NIAGARA_EMITTER_DATA_TYPE* EmitterData = Handle.GetEmitterData();
-#else
-        MCP_NIAGARA_EMITTER_DATA_TYPE* EmitterData = Handle.GetInstance();
-#endif
-        if (EmitterData && EmitterData->GetRenderers().Num() == 0)
-        {
-            WarningsArray.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("Emitter '%s' has no renderers."), *Handle.GetName().ToString())));
-        }
     }
-    ValidationResult->SetBoolField(TEXT("isValid"), true);
+
+    // The real validation: harvest the stack issues that the Niagara editor itself computes.
+    // The previous implementation hard-coded isValid=true; an earlier attempt that inspected each
+    // script's ENiagaraScriptCompileStatus missed the common failures ("unmet dependencies",
+    // deprecated modules) because those are *stack issues*, not VM compile-status errors.
+    // We build a throwaway data-processing-only view model — the lightweight, editor-safe mode the
+    // engine's own headless helpers use — and RefreshAll() it, which initializes the system stack
+    // and emitter stacks and computes their issues. (We can't reuse an already-open editor view
+    // model: TNiagaraViewModelManager's lookup references a static member that isn't exported to
+    // other modules. And we deliberately do NOT call the unexported Cleanup(); letting the shared
+    // pointer drop is the supported teardown for these throwaway view models.)
+    TSharedRef<FNiagaraSystemViewModel> SystemViewModel = MakeShared<FNiagaraSystemViewModel>();
+    {
+        FNiagaraSystemViewModelOptions Options;
+        Options.bCanAutoCompile = false;
+        Options.bCanModifyEmittersFromTimeline = false;
+        Options.bCanSimulate = false;
+        Options.bCompileForEdit = false;
+        Options.bIsForDataProcessingOnly = true;
+        Options.EditMode = ENiagaraSystemViewModelEditMode::SystemAsset;
+        // RefreshAll() subscribes to the Niagara message manager keyed by this GUID; it asserts on an
+        // empty key (NiagaraMessageManager.cpp: "Tried to subscribe to an asset without a set asset
+        // key"). A throwaway unique key is fine — we never route messages, and the view model's
+        // destructor (~FNiagaraSystemViewModel -> Cleanup()) tears the subscription down when it drops.
+        Options.MessageLogGuid = FGuid::NewGuid();
+        SystemViewModel->Initialize(*System, Options);
+        SystemViewModel->RefreshAll();
+    }
+
+    // Each stack's per-module issues (including the "unmet dependencies" dependency check) are only
+    // computed when its root's children are refreshed; RefreshAll() inits the stacks but doesn't
+    // drill the emitter stacks in data-processing mode, so refresh each root explicitly before
+    // harvesting.
+    auto RefreshAndCollect = [&ErrorsArray, &WarningsArray](UNiagaraStackViewModel* Stack)
+    {
+        if (!Stack)
+        {
+            return;
+        }
+        if (UNiagaraStackEntry* Root = Stack->GetRootEntry())
+        {
+            Root->RefreshChildren();
+            CollectStackIssues(Root, ErrorsArray, WarningsArray);
+        }
+    };
+    RefreshAndCollect(SystemViewModel->GetSystemStackViewModel());
+    for (const TSharedRef<FNiagaraEmitterHandleViewModel>& EmitterHandleViewModel : SystemViewModel->GetEmitterHandleViewModels())
+    {
+        RefreshAndCollect(EmitterHandleViewModel->GetEmitterStackViewModel());
+    }
+
+    const bool bIsValid = ErrorsArray.Num() == 0;
+    ValidationResult->SetBoolField(TEXT("isValid"), bIsValid);
     ValidationResult->SetArrayField(TEXT("errors"), ErrorsArray);
     ValidationResult->SetArrayField(TEXT("warnings"), WarningsArray);
     Context.Result->SetObjectField(TEXT("validationResult"), ValidationResult);
-    Context.Result->SetStringField(TEXT("message"), TEXT("System is valid."));
+    Context.Result->SetStringField(TEXT("message"), bIsValid ? TEXT("System is valid.") : TEXT("System has errors."));
     Context.SendSuccess(true, TEXT("Validation complete."));
     return true;
 }
