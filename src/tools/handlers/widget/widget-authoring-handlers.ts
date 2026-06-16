@@ -22,8 +22,11 @@ export async function handleWidgetAuthoringTools(
     };
   }
 
-  const context = createWidgetAuthoringContext(args, tools);
-  applyWidgetParamAliases(context.argsRecord, requiredFields);
+  // Resolve aliases on a copy before building the context, so a widgetPath
+  // sourced from the blueprintPath alias still flows through path normalization.
+  const aliasedArgs = { ...args };
+  applyWidgetParamAliases(aliasedArgs, requiredFields);
+  const context = createWidgetAuthoringContext(aliasedArgs, tools);
   validateWidgetRequiredFields(context.argsRecord, requiredFields);
   return await sendWidgetAuthoringRequest(context, action);
 }

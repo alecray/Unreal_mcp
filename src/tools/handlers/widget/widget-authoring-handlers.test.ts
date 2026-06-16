@@ -43,17 +43,18 @@ describe('handleWidgetAuthoringTools payload normalization', () => {
     }), expect.any(Object));
   });
 
-  it('accepts blueprintPath as an alias for widgetPath', async () => {
+  it('accepts blueprintPath as an alias for widgetPath and still normalizes it', async () => {
     const { tools, sendAutomationRequest } = createConnectedTools();
 
+    // Backslashes + missing root exercise path normalization on the alias'd value.
     await handleWidgetAuthoringTools('get_widget_info', {
       action: 'get_widget_info',
-      blueprintPath: '/Game/UI/WBP_Menu.WBP_Menu'
+      blueprintPath: 'UI\\WBP_Menu'
     }, tools);
 
     expect(sendAutomationRequest).toHaveBeenCalledWith('manage_widget_authoring', expect.objectContaining({
       subAction: 'get_widget_info',
-      widgetPath: '/Game/UI/WBP_Menu.WBP_Menu'
+      widgetPath: '/Game/UI/WBP_Menu'
     }), expect.any(Object));
   });
 
