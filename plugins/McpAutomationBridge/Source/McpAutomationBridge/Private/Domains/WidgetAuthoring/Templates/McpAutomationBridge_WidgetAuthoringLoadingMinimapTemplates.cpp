@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringGuidRegistry.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
@@ -134,7 +135,7 @@ bool HandleWidgetAuthoringLoadingMinimapTemplates(
     if (SubAction.Equals(TEXT("add_minimap"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Minimap"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Minimap"));
         float Size = GetJsonNumberField(Payload, TEXT("size"), 200.0f);
 
         if (WidgetPath.IsEmpty())
@@ -196,7 +197,7 @@ bool HandleWidgetAuthoringLoadingMinimapTemplates(
     if (SubAction.Equals(TEXT("add_compass"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Compass"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Compass"));
 
         if (WidgetPath.IsEmpty())
         {

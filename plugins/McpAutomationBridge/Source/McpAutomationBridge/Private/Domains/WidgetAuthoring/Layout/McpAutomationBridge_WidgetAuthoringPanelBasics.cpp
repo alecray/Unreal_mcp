@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringGuidRegistry.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
@@ -40,7 +41,7 @@ bool HandleWidgetAuthoringPanelBasics(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("CanvasPanel"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("CanvasPanel"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -98,7 +99,7 @@ bool HandleWidgetAuthoringPanelBasics(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("HorizontalBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("HorizontalBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -155,7 +156,7 @@ bool HandleWidgetAuthoringPanelBasics(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("VerticalBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("VerticalBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -212,7 +213,7 @@ bool HandleWidgetAuthoringPanelBasics(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Overlay"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Overlay"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

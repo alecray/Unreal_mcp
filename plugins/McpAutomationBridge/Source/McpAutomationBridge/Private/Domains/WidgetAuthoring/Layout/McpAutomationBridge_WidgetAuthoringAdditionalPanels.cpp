@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringValidation.h"
@@ -33,7 +34,7 @@ bool HandleWidgetAuthoringAdditionalPanels(
     if (SubAction.Equals(TEXT("add_safe_zone"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("SafeZone"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("SafeZone"));
         FString ParentSlot = GetJsonStringField(Payload, TEXT("parentSlot"));
 
         if (WidgetPath.IsEmpty())
@@ -87,7 +88,7 @@ bool HandleWidgetAuthoringAdditionalPanels(
     if (SubAction.Equals(TEXT("add_spacer"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Spacer"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Spacer"));
         FString ParentSlot = GetJsonStringField(Payload, TEXT("parentSlot"));
         float SizeX = GetJsonNumberField(Payload, TEXT("sizeX"), 100.0f);
         float SizeY = GetJsonNumberField(Payload, TEXT("sizeY"), 100.0f);
@@ -146,7 +147,7 @@ bool HandleWidgetAuthoringAdditionalPanels(
     if (SubAction.Equals(TEXT("add_widget_switcher"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("WidgetSwitcher"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("WidgetSwitcher"));
         FString ParentSlot = GetJsonStringField(Payload, TEXT("parentSlot"));
         int32 ActiveIndex = GetJsonIntField(Payload, TEXT("activeIndex"), 0);
 

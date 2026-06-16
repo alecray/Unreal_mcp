@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
 
@@ -32,7 +33,7 @@ bool HandleWidgetAuthoringObjectiveDamageTemplates(
     if (SubAction.Equals(TEXT("add_interaction_prompt"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("InteractionPrompt"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("InteractionPrompt"));
         FString DefaultText = GetJsonStringField(Payload, TEXT("text"), TEXT("Press E to Interact"));
 
         if (WidgetPath.IsEmpty())
@@ -89,7 +90,7 @@ bool HandleWidgetAuthoringObjectiveDamageTemplates(
     if (SubAction.Equals(TEXT("add_objective_tracker"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("ObjectiveTracker"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("ObjectiveTracker"));
 
         if (WidgetPath.IsEmpty())
         {
@@ -155,7 +156,7 @@ bool HandleWidgetAuthoringObjectiveDamageTemplates(
     if (SubAction.Equals(TEXT("add_damage_indicator"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("DamageIndicator"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("DamageIndicator"));
 
         if (WidgetPath.IsEmpty())
         {

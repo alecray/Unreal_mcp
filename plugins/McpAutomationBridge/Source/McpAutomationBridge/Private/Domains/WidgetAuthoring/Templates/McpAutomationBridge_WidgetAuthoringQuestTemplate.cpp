@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
 
@@ -30,7 +31,7 @@ bool HandleWidgetAuthoringQuestTemplate(
     if (SubAction.Equals(TEXT("add_quest_tracker"), ESearchCase::IgnoreCase))
     {
         FString WidgetPath = GetJsonStringField(Payload, TEXT("widgetPath"));
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("QuestTracker"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("QuestTracker"));
 
         if (WidgetPath.IsEmpty())
         {

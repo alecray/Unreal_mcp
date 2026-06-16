@@ -1,4 +1,5 @@
 #include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringActions.h"
+#include "Domains/WidgetAuthoring/McpAutomationBridge_WidgetAuthoringPayload.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringBlueprintLoading.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringGuidRegistry.h"
 #include "Domains/WidgetAuthoring/Support/McpAutomationBridge_WidgetAuthoringTreeMutation.h"
@@ -35,7 +36,7 @@ bool HandleWidgetAuthoringScrollScalePanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("ScrollBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("ScrollBox"));
         FString Orientation = GetJsonStringField(Payload, TEXT("orientation"), TEXT("Vertical"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
@@ -125,7 +126,7 @@ bool HandleWidgetAuthoringScrollScalePanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("SizeBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("SizeBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -206,7 +207,7 @@ bool HandleWidgetAuthoringScrollScalePanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("ScaleBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("ScaleBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

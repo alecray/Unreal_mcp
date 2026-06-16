@@ -42,7 +42,7 @@ bool HandleWidgetAuthoringInputWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("RichTextBlock"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("RichTextBlock"));
         FString Text = GetJsonStringField(Payload, TEXT("text"), TEXT("Rich Text"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
@@ -102,7 +102,7 @@ bool HandleWidgetAuthoringInputWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("CheckBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("CheckBox"));
         bool bIsChecked = GetJsonBoolField(Payload, TEXT("isChecked"), false);
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
@@ -162,7 +162,7 @@ bool HandleWidgetAuthoringInputWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("TextInput"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("TextInput"));
         FString HintText = GetJsonStringField(Payload, TEXT("hintText"), TEXT(""));
         bool bMultiLine = GetJsonBoolField(Payload, TEXT("multiLine"), false);
 
@@ -241,7 +241,7 @@ bool HandleWidgetAuthoringInputWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("ComboBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("ComboBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

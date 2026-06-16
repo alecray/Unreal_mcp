@@ -35,7 +35,7 @@ bool HandleWidgetAuthoringValueWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("ProgressBar"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("ProgressBar"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -113,7 +113,7 @@ bool HandleWidgetAuthoringValueWidgets(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Slider"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Slider"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

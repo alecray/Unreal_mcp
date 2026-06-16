@@ -42,7 +42,7 @@ bool HandleWidgetAuthoringBasicVisuals(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("TextBlock"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("TextBlock"));
         FString Text = GetJsonStringField(Payload, TEXT("text"), TEXT("Text"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
@@ -129,7 +129,7 @@ bool HandleWidgetAuthoringBasicVisuals(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Image"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Image"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -206,7 +206,7 @@ bool HandleWidgetAuthoringBasicVisuals(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Button"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Button"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

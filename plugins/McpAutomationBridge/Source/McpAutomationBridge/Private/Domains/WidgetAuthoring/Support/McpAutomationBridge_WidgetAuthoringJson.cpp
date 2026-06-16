@@ -50,6 +50,24 @@ FString GetSlotName(const TSharedPtr<FJsonObject>& Payload)
     return GetJsonStringField(Payload, TEXT("widgetName"));
 }
 
+FString GetNewWidgetName(const TSharedPtr<FJsonObject>& Payload, const FString& Default)
+{
+    if (!Payload.IsValid())
+    {
+        return Default;
+    }
+    const TCHAR* Keys[] = { TEXT("name"), TEXT("slotName"), TEXT("widgetName") };
+    for (const TCHAR* Key : Keys)
+    {
+        const FString Value = GetJsonStringField(Payload, Key);
+        if (!Value.IsEmpty())
+        {
+            return Value;
+        }
+    }
+    return Default;
+}
+
 ESlateVisibility GetVisibility(const FString& VisibilityStr)
 {
     if (VisibilityStr.Equals(TEXT("Collapsed"), ESearchCase::IgnoreCase))

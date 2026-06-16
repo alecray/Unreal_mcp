@@ -33,7 +33,7 @@ bool HandleWidgetAuthoringBorderPanel(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("Border"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("Border"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)

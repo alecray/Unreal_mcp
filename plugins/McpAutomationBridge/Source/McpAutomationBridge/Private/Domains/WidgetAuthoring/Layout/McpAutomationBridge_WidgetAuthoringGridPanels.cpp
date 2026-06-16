@@ -40,7 +40,7 @@ bool HandleWidgetAuthoringGridPanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("GridPanel"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("GridPanel"));
         int32 ColumnCount = static_cast<int32>(GetJsonNumberField(Payload, TEXT("columnCount"), 2));
         int32 RowCount = static_cast<int32>(GetJsonNumberField(Payload, TEXT("rowCount"), 2));
 
@@ -99,7 +99,7 @@ bool HandleWidgetAuthoringGridPanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("UniformGridPanel"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("UniformGridPanel"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
@@ -179,7 +179,7 @@ bool HandleWidgetAuthoringGridPanels(
             return true;
         }
 
-        FString SlotName = GetJsonStringField(Payload, TEXT("slotName"), TEXT("WrapBox"));
+        FString SlotName = GetNewWidgetName(Payload, TEXT("WrapBox"));
 
         UWidgetBlueprint* WidgetBP = LoadWidgetBlueprint(WidgetPath);
         if (!WidgetBP)
