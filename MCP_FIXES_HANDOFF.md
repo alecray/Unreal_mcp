@@ -5,6 +5,23 @@ Author of work: Claude (Opus). Date: 2026-06-15/16.
 
 ---
 
+## ⏭️ RESUME HERE NEXT TIME (2026-06-16 end-of-session state)
+
+**Everything below in §0–§8 is history.** Current state:
+- **5 fixes shipped** (5.8 build, #7 validate, #4 spawn rollback, #5 ListenPorts warn, `MCP_NATIVE_PORT` env) — on `fork/mcp-fixes` AND in upstream **PR #479** (`pr/mcp-58-fixes` off `dev`; 5 fix commits + a `docs:` commit; CI green incl. semantic title) AND ported into WhenPigsFly (WPF commits `451e8ee`+`272e7a9`, build+runtime verified on port 3001).
+- **PR #479 was self-reviewed.** Two [should-fix] items already done (CHANGELOG + `MCP_NATIVE_PORT` docs). **Two open review items, only do if you want them:** (a) [question] guard full-VM validate against an already-open asset via `UAssetEditorSubsystem::FindEditorsForAsset`; (b) [nit] spawn rollback `Destroy()` → `UEditorActorSubsystem::DestroyActor`.
+- **Per-game MCP ports:** WPF 3001 / gearmaw 3002 / lumespawn 3003 (NativeMCPPort + `.mcp.json` must match). **lumespawn MCP isn't installed** — see `E:\Game Projects\lumespawn\MCP_SETUP.md`.
+
+**Candidate next improvements (pick from here):**
+1. Respond to / merge **PR #479** (maintainer feedback), and optionally address its 2 open review items.
+2. **#3 `bEnableNativeMCP` default** — still propose-only; raise upstream as a discussion/issue if wanted (security tradeoff of server-on-by-default).
+3. Mine `E:\Game Projects\gearmaw\Plugins\McpAutomationBridge\UNREAL_MCP_IMPROVEMENTS.md` for the next unfixed, upstream-clear backlog item (re-run the upstream check first — see memory `check-upstream-before-implementing-backlog`).
+4. Port future verified fixes to WPF the same way (CRLF-preserved copy; lesson `git-port-changes-between-vendored-copies-crlf-diff-noise`).
+
+**How to iterate fast:** MCPBench bench (§3) is still set up (junctioned plugin, port 3010). Build → launch → HTTP-test recipe in §3.
+
+---
+
 ## 0. TL;DR / current state
 
 We are extending/fixing the **ChiR24/Unreal_mcp** plugin (`McpAutomationBridge`), which Alec
