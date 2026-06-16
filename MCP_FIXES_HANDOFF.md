@@ -12,9 +12,16 @@ uses for AI-driven Unreal Editor automation. This repo is a clone of ChiR24's `d
 work is on branch **`mcp-fixes`**, pushed to Alec's fork **`git@github.com:alecray/Unreal_mcp.git`**
 (remote name `fork`). Base commit: `94acb14` (ChiR24 `dev` @ 2026-06-15, "#475 apply defaultValue").
 
-Two commits on `mcp-fixes`:
+Commits on `mcp-fixes`:
 - `c63c6ba` **fix: build McpAutomationBridge on UE 5.8 (FJsonObject::Values key type)** — complete, verified (builds clean).
-- `940935f` **feat: validate_niagara_system reports real stack issues (WIP)** — compiles & runs on 5.8, but the headless path does NOT yet detect per-emitter dependency errors. **PARKED** — see §5.
+- `940935f` **feat: validate_niagara_system reports real stack issues (WIP)** — superseded; see below.
+- **#7 now RESOLVED & VERIFIED (2026-06-16):** switched the validate path to a FULL view model
+  (`bIsForDataProcessingOnly = false`). Root cause found: `UNiagaraStackModuleItem::RefreshIssues`
+  (engine `NiagaraStackModuleItem.cpp:967`) hard-returns an empty issue list in data-processing mode,
+  so a data-processing VM can NEVER surface per-module errors. Built in MCPBench (5.8) and HTTP-tested:
+  `/Game/NS_BenchTest` → `isValid:false, errors:["The module has unmet dependencies."]`;
+  `/Game/NS_Control` → `isValid:true` (no false alarm). See §5. **For a clean upstream PR, squash
+  `940935f` + the finalizing commit.**
 
 The improvement backlog (audit of Alec's notes across all his game repos) lives in
 `E:\Game Projects\gearmaw\Plugins\McpAutomationBridge\UNREAL_MCP_IMPROVEMENTS.md` (a different
@@ -148,7 +155,19 @@ UE 5.8 changed `FJsonObject::Values`' key type to `UE::TSharedString<TCHAR>`, so
 
 ---
 
-## 5. #7 validate_niagara_system — the parked WIP (READ THIS BEFORE CONTINUING)
+## 5. #7 validate_niagara_system — RESOLVED (history below; was parked WIP)
+
+> **RESOLUTION (2026-06-16):** The blocker below ("data-processing VM doesn't run per-emitter
+> dependency analysis") was traced to the engine: `UNiagaraStackModuleItem::RefreshIssues`
+> (`NiagaraStackModuleItem.cpp:967`) does `if (GetSystemViewModel()->GetIsForDataProcessingOnly()) {
+> NewIssues.Empty(); return; }` — module items emit NO issues at all in data-processing mode. The fix
+> was **Option A**: build a FULL view model (`bIsForDataProcessingOnly = false`) with `bCanSimulate=false`
+> (so `SetupPreviewComponentAndInstance` makes no preview component) and compile off; `SetupSequencer`
+> still runs but only builds a detached transient Sequencer. Option B (reuse the open editor's VM) was
+> confirmed IMPOSSIBLE from the plugin: `NiagaraSystemToolkit.h` is in NiagaraEditor/**Private** and the
+> `TNiagaraViewModelManager` static won't link. So we always spin our own VM. Verified via HTTP against
+> `/Game/NS_BenchTest` (isValid:false + unmet-dependency) and `/Game/NS_Control` (isValid:true). The
+> historical analysis below is kept for context.
 
 File: `.../Domains/NiagaraAuthoring/McpAutomationBridge_NiagaraAuthoringHandlersInfoValidation.cpp`
 Function: `ValidateNiagaraSystem` (+ file-static helper `CollectStackIssues`).
@@ -261,10 +280,11 @@ Base: `Z:\Epic Games\UE_5.8\Engine\Plugins\FX\Niagara\Source\NiagaraEditor\`
 ---
 
 ## 7. Next steps (prioritized)
-1. **Finish #7** (this is where we stopped): implement Option A (full VM) — likely with the Option B
-   "reuse if open" guard — rebuild in MCPBench, validate `NS_BenchTest` → expect
-   `isValid:false` + "The module has unmet dependencies."; also re-check `NS_Control` (no false alarm)
-   and an asset-not-open case. Then amend/replace commit `940935f`.
+1. ~~**Finish #7**~~ ✅ DONE & VERIFIED (2026-06-16) — Option A full VM; no Option B guard (impossible
+   from the plugin, see §5). Built in MCPBench, HTTP-tested both broken + clean. Finalizing commit on
+   `mcp-fixes` (local; not yet pushed). **Open question for a shipping build:** if the asset is already
+   open in a Niagara editor, we now spin a *second* full VM for the same `UNiagaraSystem` — theoretical
+   conflict (both register undo / reset). Not observed; revisit only if it bites. NEXT BACKLOG ITEM ↓.
 2. **#11 PCG Build.cs 5.8:** change the PCG `AddOptionalDynamicModule(...)` to
    `AddOptionalConditionalModule(...)` in `McpAutomationBridge.Build.cs` (first verify that helper
    exists in the dev Build.cs; Alec's WPF note used it). Prevents `LNK1194` when PCG is enabled.

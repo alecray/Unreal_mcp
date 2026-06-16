@@ -158,12 +158,21 @@ static bool ValidateNiagaraSystem(FActionContext& Context)
     // The previous implementation hard-coded isValid=true; an earlier attempt that inspected each
     // script's ENiagaraScriptCompileStatus missed the common failures ("unmet dependencies",
     // deprecated modules) because those are *stack issues*, not VM compile-status errors.
-    // We build a throwaway data-processing-only view model — the lightweight, editor-safe mode the
-    // engine's own headless helpers use — and RefreshAll() it, which initializes the system stack
-    // and emitter stacks and computes their issues. (We can't reuse an already-open editor view
-    // model: TNiagaraViewModelManager's lookup references a static member that isn't exported to
-    // other modules. And we deliberately do NOT call the unexported Cleanup(); letting the shared
-    // pointer drop is the supported teardown for these throwaway view models.)
+    //
+    // We build a throwaway view model in FULL (non-data-processing) mode and let it refresh the
+    // system + emitter stacks, then collect every Error/Warning stack issue. Full mode is REQUIRED:
+    // UNiagaraStackModuleItem::RefreshIssues() early-outs to an empty issue list whenever the owning
+    // system view model GetIsForDataProcessingOnly() is true (NiagaraStackModuleItem.cpp ~L967), so a
+    // data-processing-only VM can never surface per-module errors — including the dependency check
+    // that produces "The module has unmet dependencies." We keep the heavy bits off: bCanSimulate is
+    // false (so SetupPreviewComponentAndInstance() creates no preview UNiagaraComponent) and
+    // bCanAutoCompile/bCompileForEdit are false. SetupSequencer() still runs but only builds a
+    // detached transient Sequencer (the same construction the Niagara asset editor performs).
+    //
+    // We can't reuse an already-open editor's view model: TNiagaraViewModelManager's lookup
+    // references a static member not exported to other modules, and FNiagaraSystemToolkit lives in
+    // NiagaraEditor/Private. So we always spin our own VM. We deliberately do NOT call the unexported
+    // Cleanup(); letting the shared pointer drop runs ~FNiagaraSystemViewModel -> Cleanup() for us.
     TSharedRef<FNiagaraSystemViewModel> SystemViewModel = MakeShared<FNiagaraSystemViewModel>();
     {
         FNiagaraSystemViewModelOptions Options;
@@ -171,21 +180,19 @@ static bool ValidateNiagaraSystem(FActionContext& Context)
         Options.bCanModifyEmittersFromTimeline = false;
         Options.bCanSimulate = false;
         Options.bCompileForEdit = false;
-        Options.bIsForDataProcessingOnly = true;
+        Options.bIsForDataProcessingOnly = false;
         Options.EditMode = ENiagaraSystemViewModelEditMode::SystemAsset;
-        // RefreshAll() subscribes to the Niagara message manager keyed by this GUID; it asserts on an
-        // empty key (NiagaraMessageManager.cpp: "Tried to subscribe to an asset without a set asset
-        // key"). A throwaway unique key is fine — we never route messages, and the view model's
-        // destructor (~FNiagaraSystemViewModel -> Cleanup()) tears the subscription down when it drops.
+        // Initialize() -> RefreshAll() subscribes to the Niagara message manager keyed by this GUID;
+        // it asserts on an empty key (NiagaraMessageManager.cpp: "Tried to subscribe to an asset
+        // without a set asset key"). A throwaway unique key is fine — we never route messages, and the
+        // view model's destructor (~FNiagaraSystemViewModel -> Cleanup()) tears the subscription down.
         Options.MessageLogGuid = FGuid::NewGuid();
         SystemViewModel->Initialize(*System, Options);
-        SystemViewModel->RefreshAll();
     }
 
-    // Each stack's per-module issues (including the "unmet dependencies" dependency check) are only
-    // computed when its root's children are refreshed; RefreshAll() inits the stacks but doesn't
-    // drill the emitter stacks in data-processing mode, so refresh each root explicitly before
-    // harvesting.
+    // Initialize() already RefreshAll()'d the stacks, but harvest defensively by refreshing each
+    // root's children before walking it, so the per-module issues (the dependency check included)
+    // are guaranteed current.
     auto RefreshAndCollect = [&ErrorsArray, &WarningsArray](UNiagaraStackViewModel* Stack)
     {
         if (!Stack)
