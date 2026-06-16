@@ -47,7 +47,13 @@ FString GetSlotName(const TSharedPtr<FJsonObject>& Payload)
     {
         return SlotName;
     }
-    return GetJsonStringField(Payload, TEXT("widgetName"));
+    SlotName = GetJsonStringField(Payload, TEXT("widgetName"));
+    if (!SlotName.IsEmpty())
+    {
+        return SlotName;
+    }
+    // #3: slot-targeting actions also accept `name` as an alias for the target slot.
+    return GetJsonStringField(Payload, TEXT("name"));
 }
 
 FString GetNewWidgetName(const TSharedPtr<FJsonObject>& Payload, const FString& Default)

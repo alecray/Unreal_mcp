@@ -46,6 +46,19 @@ bool UMcpAutomationBridgeSubsystem::HandleManageWidgetAuthoringAction(
         SubAction = GetJsonStringField(Payload, TEXT("action"));
     }
 
+    // #3: accept blueprintPath as an alias for widgetPath (the name set_default/
+    // compile/get_graph_details use), so callers don't hit a spurious
+    // "Missing required parameter: widgetPath". Done once here for every widget
+    // action. Slot-target aliasing (name -> slotName) lives in GetSlotName.
+    if (Payload.IsValid() && GetJsonStringField(Payload, TEXT("widgetPath")).IsEmpty())
+    {
+        const FString BlueprintPathAlias = GetJsonStringField(Payload, TEXT("blueprintPath"));
+        if (!BlueprintPathAlias.IsEmpty())
+        {
+            Payload->SetStringField(TEXT("widgetPath"), BlueprintPathAlias);
+        }
+    }
+
 #if WITH_EDITOR
     if (GEditor && GEditor->PlayWorld && !IsReadOnlyWidgetAuthoringAction(SubAction))
     {
